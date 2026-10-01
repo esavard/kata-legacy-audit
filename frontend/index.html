@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html ng-app="warrantyApp">
+<head>
+    <meta charset="utf-8">
+    <title>Warranty Claims</title>
+    <!-- AngularJS 1.7.9 - last stable 1.x release, already past its official End of
+         Life (June 2021) by the time anyone would be reading this. Loaded from a CDN
+         and never revisited since the 2019 Azure port. jQuery and Bootstrap 3 came
+         along for the ride because that's what AngularJS admin templates assumed back
+         then. -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.9/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body ng-controller="ShellController as shell">
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#!/">Warranty Claims</a>
+        <ul class="nav navbar-nav" ng-if="shell.isLoggedIn()">
+            <li ng-if="shell.role === 'manufacturer' || shell.role === 'admin'"><a href="#!/queue">Approval Queue</a></li>
+            <li ng-if="shell.role === 'dealer'"><a href="#!/claims">My Claims</a></li>
+            <li ng-if="shell.role === 'dealer'"><a href="#!/claims/new">New Claim</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right" ng-if="shell.isLoggedIn()">
+            <li class="navbar-text">{{shell.fullName}} ({{shell.role}})</li>
+            <li><a href="" ng-click="shell.logout()">Log out</a></li>
+        </ul>
+    </div>
+</nav>
+<div class="container-fluid" ng-view></div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.9/angular-route.min.js"></script>
+<script src="js/app.js"></script>
+<script src="js/auth.service.js"></script>
+<script src="js/claims.service.js"></script>
+<script src="js/shell.controller.js"></script>
+<script src="js/login.controller.js"></script>
+<script src="js/claims-list.controller.js"></script>
+<script src="js/claim-detail.controller.js"></script>
+<script src="js/new-claim.controller.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+/* grown since the 2019 Azure port, lots of !important because nobody wanted to trace
+   through Bootstrap 3's cascade to find the "real" fix. */
+body { padding-top: 10px !important; }
+.parts-table input { width: 90% !important; }
+.badge-pending { background-color: #d9534f !important; }

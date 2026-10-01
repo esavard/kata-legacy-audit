@@ -1,0 +1,18 @@
+<h3>Claims</h3>
+<form ng-submit="vm.search()" class="form-inline" style="margin-bottom:10px;">
+    <input type="text" class="form-control" ng-model="vm.q" placeholder="Search customer, VIN, claim #...">
+    <button type="submit" class="btn btn-default">Search</button>
+    <a href="#!/claims/new" class="btn btn-primary pull-right">+ New Claim</a>
+</form>
+<table class="table table-striped">
+    <tr><th>Claim #</th><th>Customer</th><th>Vehicle</th><th>Status</th><th></th></tr>
+    <tr ng-repeat="c in vm.claims">
+        <td>{{c.claimNumber}}</td>
+        <td>{{c.customerName}}</td>
+        <td>{{c.vehicleModel}} {{c.vehicleYear}}</td>
+        <td>{{c.status}}</td>
+        <!-- sequential ids, no ownership check server-side on GetById - see
+             ClaimsController.cs. this link works for ANY id, not just this dealer's. -->
+        <td><a href="#!/claims/{{c.id}}">Open</a></td>
+    </tr>
+</table>

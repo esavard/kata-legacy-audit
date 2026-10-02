@@ -20,6 +20,17 @@ with Honda/Toyota/GM already listed - the early, unfinished shape of a plan to s
 other manufacturers too. Look closely at what's actually implemented behind that
 dropdown before assuming it works.
 
+One thing worth stating plainly, because it should shape how you read the rest of the
+code: the person who originally built this deeply understood warranty-claims processing
+- the tax math, the labor rates, the approval workflow, the parts/pricing conventions -
+and the system has been computing and running that logic correctly in production since
+2019-2020. Nobody at the dealerships is complaining that their invoices are wrong. The
+domain knowledge encoded in this codebase is sound. What's a house of cards is the
+*architecture* around that knowledge - how tangled, duplicated, and fragile to change it
+all is - not the business rules themselves. Keep that distinction in mind in every step
+below: the audit should find structural risk, not accuse the business logic of being
+wrong just because the code holding it is ugly.
+
 **The problem the company is living with right now:** the developer who did the 2019
 port has a full-time job elsewhere and can't give this any real attention anymore. Worse,
 nobody at the company knows where the source code is. The app runs on Azure and the
@@ -71,6 +82,10 @@ Set security aside and look at how the code is organized:
 - What's the actual shape of the data - is the database schema telling you the truth
   about the domain, or hiding it?
 - What would you need before you could safely change anything (tests? something else?)
+- Where the same rule shows up more than once, does it actually still agree everywhere
+  today, or has it already started to drift? Either answer is useful: "it still agrees,
+  but only because nobody's touched all four copies at once" is as real a risk as "it's
+  already inconsistent."
 
 ### 3. Event storming
 
@@ -95,6 +110,12 @@ Using what came out of the event storming:
   independently of what?
 - Sketch what a corrected data model would look like, and contrast it with the actual
   schema you found in step 2.
+
+Remember the distinction from the scenario above: the goal here is to give the correct
+business rules a home that isn't a house of cards, not to second-guess or rewrite the
+domain knowledge itself. A good target architecture *extracts and preserves* what the
+original developer got right, behind a structure that can survive someone other than
+them touching it.
 
 ### 5. The deliverable: audit & modernization report
 
@@ -136,6 +157,71 @@ God table behind a repository) - and actually implement it against this codebase
 characterization tests first if you can, so you have something to prove you didn't
 change behavior. The point is to practice untangling spaghetti code hands-on, not to
 finish the whole migration - stop once you've proven the approach on one slice.
+
+## Suggested tools
+
+Nothing here is required - the exercise is doable with just a code editor and a brain -
+but these can speed up or sharpen each step for this particular stack.
+
+**Security & dependency audit (step 1)**
+- `dotnet list package --vulnerable --include-transitive` from `backend/WarrantyClaims.Api`
+  once `dotnet restore` has pulled real packages - flags the log4net/Newtonsoft/
+  iTextSharp advisories directly.
+- GitHub Dependabot (already enabled on this repo) and/or Snyk for a second opinion and
+  for the frontend side.
+- [retire.js](https://retirejs.github.io/retire.js/) against `frontend/` for the
+  outdated AngularJS/jQuery/Bootstrap CDN references.
+- Roslyn analyzers - `Microsoft.CodeAnalysis.NetAnalyzers` (ships with the SDK) and
+  [Security Code Scan](https://security-code-scan.github.io/) for .NET-specific
+  injection/deserialization/crypto findings (it's built to catch exactly the
+  `FromSqlRaw`-with-interpolation and `TypeNameHandling.All` patterns in
+  `ClaimsController.cs`).
+- [OWASP ZAP](https://www.zaproxy.org/) if you want to actually probe the running API
+  (SQLi, auth, CORS) rather than only read the code for it.
+
+**Architecture & code quality audit (step 2)**
+- [SonarQube Community Edition](https://www.sonarsource.com/products/sonarqube/) or
+  SonarCloud - duplication detection and cyclomatic complexity scoring will surface the
+  four-copies-of-the-same-calculation problem and the God-controller size objectively,
+  not just anecdotally.
+- [NDepend](https://www.ndepend.com/) (commercial, free trial) if you want a real
+  dependency-graph/"architecture smell" view of the C# side - it's specifically built
+  for diagnosing the "house of cards" kind of finding this audit is after.
+- `dotnet-depends` or a quick C4-model sketch (Structurizr, or just Mermaid/PlantUML) to
+  draw what you find - useful both for your own thinking and as a figure in the final
+  report.
+
+**Event storming & DDD (steps 3-4)**
+- A physical or virtual sticky-note board (Miro, FigJam, or literal paper) - event
+  storming is a modeling technique, not a tool-dependent one.
+- [Context Mapper](https://contextmapper.org/) if you want to formalize the bounded
+  contexts and their relationships (a DSL + diagrams) rather than leave them as sketches.
+
+**Evaluating the AngularJS → Angular migration effort specifically**
+
+This app's frontend is a good real-world case for this question, independent of the
+rest of the audit: AngularJS has had no security updates since it went end-of-life in
+2021, so "stay on AngularJS" is not a real long-term option.
+
+- [ngMigration Assistant](https://github.com/ellamaolson/ngMigration-Assistant) - a
+  CLI built for exactly this: it scans an AngularJS codebase, measures size (SLOC),
+  flags migration-blocking antipatterns, and recommends a path (full rewrite vs.
+  incremental hybrid upgrade vs. "you're basically already there"). A good first pass
+  to run against `frontend/` before estimating anything by hand.
+- [`@angular/upgrade`](https://angular.dev/guide/upgrade) (ngUpgrade) - the official
+  hybrid-app mechanism for running AngularJS and Angular side by side and migrating
+  module-by-module instead of as a big-bang rewrite. There's no mature automated
+  codemod from AngularJS syntax to Angular (the frameworks are too different), so
+  ngUpgrade's incremental path is the realistic option to size, not a one-shot
+  conversion tool.
+- Plain size/complexity metrics as a sizing input - `cloc` or `scc` over `frontend/js`,
+  plus a manual tally of controllers/directives/services and which ones touch the DOM
+  directly (`jQuery`, `$compile`, custom directives) versus simple data-binding - the
+  former migrate much slower than the latter, and that ratio is a better effort signal
+  than raw line count.
+- ESLint with Angular-aware rules (or just grep) to flag `$scope`, two-way `ng-model`
+  binding, and jQuery usage specifically - these are the patterns that make a component
+  "hard" to port and are worth calling out by name in the sizing section of your report.
 
 ## Ground rules
 

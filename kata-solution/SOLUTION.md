@@ -17,6 +17,19 @@ ASP.NET Core + AngularJS + what's now Postgres) in 2019. Today it genuinely runs
 real Ford dealerships (`dealers` is a real, normalized table) but the "multi-manufacturer"
 dropdown (`manufacturers` table) is cosmetic - see below.
 
+**Framing to hold onto while running this:** the original WinForms developer understood
+warranty-claims processing well, and the domain logic has been computing correct results
+in production since 2019-2020 - nobody's filed a real complaint about the tax/labor math
+itself. `KATA.md` now states this explicitly so participants don't treat "the code is
+ugly" as license to also assume "the business rules are wrong." If someone's audit
+findings end up reading as "the domain logic is incorrect," that's a miss worth flagging
+in review - the findings should be about structure (duplication, coupling, no tests, no
+deploy path), not about the warranty-claims math being broken. The one real exception to
+point out if it comes up: the four duplicated total/tax calculations below do diverge by
+a cent or two from each other in edge cases, which is itself the point - "nobody's
+touched all four copies at once recently" is a duplication/drift risk, not evidence the
+original domain modeling was wrong.
+
 ## Seeded architectural smells
 
 - **God table, partially escaped** (`db/schema.sql`, `claims`): `Dealer` got pulled out
@@ -48,7 +61,10 @@ dropdown (`manufacturers` table) is cosmetic - see below.
      recomputing, so an old claim can show a "wrong" total on its PDF forever.
   4. `frontend/js/claim-detail.controller.js::calcClientTotal()` - client-side preview,
      no tax applied at all.
-  Good discussion point: single source of truth / a `Money`+`Invoice` domain object.
+  Good discussion point: single source of truth / a `Money`+`Invoice` domain object. A
+  SonarQube/SonarCloud duplication scan (see `KATA.md`'s tools section) will surface all
+  four copies mechanically rather than relying on someone spotting them by eye - worth
+  pointing a participant at if their step-2 write-up only found two or three.
 - **Magic strings for state**: `claims.status` is a free varchar with an undocumented
   state machine (`draft → submitted → approved|rejected → parts_ordered → in_repair →
   completed → invoiced → paid`), plus dirty data (the `'aproved'` typo row in
@@ -135,7 +151,10 @@ dropdown (`manufacturers` table) is cosmetic - see below.
 1. **Audit pass**: have the person/team run `dotnet list package --vulnerable` (once
    `dotnet restore` succeeds with real internet access), `retire.js` against
    `frontend/`, and a manual code read to find the SQLi/insecure-deserialization/XSS/
-   IDOR/path-traversal/secrets/CORS/logging issues above.
+   IDOR/path-traversal/secrets/CORS/logging issues above. `KATA.md`'s new "Suggested
+   tools" section lists the specific tools for this stack (Roslyn's Security Code Scan,
+   Dependabot/Snyk, OWASP ZAP) if someone asks what to reach for beyond grep and `dotnet
+   list package`.
 2. **Event storming**: work from the *behavior*, not the table - "Claim Submitted,"
    "Claim Approved," "Claim Rejected," "Parts Ordered," "Repair Completed," "Invoice
    Generated," "Invoice Paid" are the candidate domain events already implied by the
@@ -192,3 +211,11 @@ dropdown (`manufacturers` table) is cosmetic - see below.
    Push for characterization tests before any of these (there are none in the repo, on
    purpose) - the exercise is as much "how do you safely change code you don't fully
    trust yet" as it is the refactor itself.
+
+   If the "unsupportable frontend" angle comes up specifically - AngularJS has had no
+   security patches since its 2021 end-of-life, so it's a real line item in any
+   roadmap - point at `KATA.md`'s tools section: ngMigration Assistant for a first-pass
+   scan of `frontend/`, and `@angular/upgrade` (ngUpgrade) as the realistic incremental
+   path to size, since there's no mature automated AngularJS→Angular codemod. A report
+   that just says "rewrite the frontend in Angular" without engaging with *how* (big-bang
+   vs. ngUpgrade-style incremental) is under-baked for step 5's roadmap section.

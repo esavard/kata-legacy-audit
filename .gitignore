@@ -1,0 +1,8 @@
+# .gitignore
+# appsettings.json / appsettings.Development.json are intentionally NOT excluded here -
+# see the comments in those files. This is one of the seeded issues: secrets committed
+# to version control, same as the old PHP kata's config.php.
+backend/**/bin/
+backend/**/obj/
+*.log
+.DS_Store

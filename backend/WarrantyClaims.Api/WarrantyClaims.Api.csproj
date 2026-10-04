@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <!-- Nullable reference types were off when this was ASP.NET Core 2.2 in 2019 and
+         stayed off every time the TFM got bumped since (net8.0 is this year's bump -
+         Azure App Service was dropping support for the old one again). Nobody turned
+         it on, so there's no nullability safety net anywhere in this codebase despite
+         targeting a modern TFM. -->
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- EF Core + Npgsql - the "modern" half of the stack, added during the Azure port.
+         Pinned to whatever 8.0.x was current when someone last touched the csproj;
+         nobody re-pins these on a schedule. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.8">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
+
+    <!-- Kept on Newtonsoft instead of System.Text.Json because "the Angular app expects
+         the old date format" (nobody remembers which endpoint, exactly). Version is
+         whatever was installed circa the Azure migration and has never been bumped -
+         flagged by dependency scanners (GHSA-5crp-9r3c-p9vr and friends: insecure
+         defaults / high resource usage on crafted input in Newtonsoft.Json < 13.0.1). -->
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.8" />
+
+    <!-- JWT bearer auth, added during the Azure port so the Angular SPA could call the
+         API with a token instead of cookies. -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" />
+
+    <!-- log4net - chosen in 2019 because that's what the lead dev's last job used.
+         Pinned to 2.0.8, which predates the fix for CVE-2018-1285 (log4net's XML config
+         loader is vulnerable to a maliciously crafted config enabling untrusted external
+         entity resolution). The fixed version is 2.0.10+; this one's never been bumped. -->
+    <PackageReference Include="log4net" Version="2.0.8" />
+
+    <!-- PDF generation for estimates/invoices - iTextSharp, the pre-iText7 AGPL/LGPL
+         fork most ASP.NET devs reached for before 2020. Unmaintained since 2020; several
+         releases in this line carry public advisories for XML-related parsing issues.
+         Nobody revisited this when iText7 came out because licensing changed and nobody
+         wanted to deal with it. -->
+    <PackageReference Include="iTextSharp" Version="5.5.13.3" />
+
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="log4net.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

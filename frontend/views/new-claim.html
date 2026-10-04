@@ -1,0 +1,44 @@
+<h3>New Warranty Claim</h3>
+<form ng-submit="vm.save()">
+    <div class="row">
+        <div class="col-sm-6">
+            <label>Manufacturer</label>
+            <select class="form-control" ng-model="vm.form.manufacturerCode" ng-options="m.code as m.displayName for m in vm.manufacturers"></select>
+            <label>VIN</label>
+            <input type="text" class="form-control" ng-model="vm.form.vin">
+            <label>Model</label>
+            <input type="text" class="form-control" ng-model="vm.form.vehicleModel">
+            <label>Year</label>
+            <input type="text" class="form-control" ng-model="vm.form.vehicleYear">
+        </div>
+        <div class="col-sm-6">
+            <label>Customer name</label>
+            <input type="text" class="form-control" ng-model="vm.form.customerName">
+            <label>Phone</label>
+            <input type="text" class="form-control" ng-model="vm.form.customerPhone">
+            <label>Email</label>
+            <input type="text" class="form-control" ng-model="vm.form.customerEmail">
+        </div>
+    </div>
+
+    <h4>Problem description</h4>
+    <textarea class="form-control" rows="4" ng-model="vm.form.problemDescription"></textarea>
+
+    <h4>Parts (max 5)</h4>
+    <table class="table table-bordered parts-table">
+        <tr><th>Name</th><th>Number</th><th>Qty</th><th>Unit price</th></tr>
+        <tr ng-repeat="p in vm.form.parts">
+            <td><input type="text" ng-model="p.name"></td>
+            <td><input type="text" ng-model="p.number"></td>
+            <td><input type="number" ng-model="p.qty"></td>
+            <td><input type="number" ng-model="p.unitPrice"></td>
+        </tr>
+    </table>
+    <button type="button" class="btn btn-default" ng-click="vm.addPart()">+ Add part</button>
+
+    <h4>Labor</h4>
+    <input type="number" class="form-control" style="width:150px;display:inline-block;" ng-model="vm.form.laborHours"> hours
+
+    <br><br>
+    <button type="submit" class="btn btn-primary">Save Draft</button>
+</form>
